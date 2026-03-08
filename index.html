@@ -3,115 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AirSentinel Dashboard</title>
+    <title>AirSentinel Pro</title>
     <style>
-        :root {
-            --bg-color: #f0f2f5;
-            --card-bg: white;
-            --text-color: #333;
-            --btn-get: #1a73e8;
-            --btn-del: #ea4335;
-            --status-color: #666;
-            --log-bg: #f8f9fa;
-            --log-border: #ddd;
-        }
-
-        [data-theme="dark"] {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --btn-get: #4285f4;
-            --btn-del: #d93025;
-            --status-color: #aaa;
-            --log-bg: #2d2d2d;
-            --log-border: #444;
-        }
-
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            text-align: center; 
-            padding: 20px; 
-            background: var(--bg-color); 
-            color: var(--text-color); 
-            transition: background 0.3s, color 0.3s; 
-        }
-
-        .card { 
-            background: var(--card-bg); 
-            padding: 30px; 
-            border-radius: 20px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
-            display: inline-block; 
-            max-width: 450px; 
-            width: 100%; 
-            transition: background 0.3s; 
-            position: relative;
-        }
-
-        #themeToggle {
-            background: none;
-            border: 1px solid var(--status-color);
-            color: var(--status-color);
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-
-        h1 { margin-bottom: 5px; color: var(--btn-get); font-size: 2.5rem; }
-        p { margin-bottom: 20px; }
-        
-        .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
-        
-        button.action-btn { 
-            border: none; 
-            padding: 18px; 
-            border-radius: 12px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: transform 0.2s, background 0.3s; 
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        
-        button.action-btn:active { transform: scale(0.96); }
-        #getBtn { background: var(--btn-get); }
-        #delBtn { background: var(--btn-del); }
-
-        #status { margin-top: 25px; font-size: 14px; font-weight: bold; color: var(--status-color); min-height: 20px; }
-        
-        #log { 
-            margin-top: 20px; 
-            text-align: left; 
-            max-height: 150px; 
-            overflow-y: auto; 
-            font-family: monospace; 
-            font-size: 11px; 
-            background: var(--log-bg); 
-            border: 1px solid var(--log-border); 
-            padding: 10px; 
-            border-radius: 8px; 
-            display: none; 
-            color: var(--text-color);
-            white-space: pre-wrap;
-        }
+        :root {--bg:#f0f2f5;--card:white;--text:#333;--get:#1a73e8;--del:#ea4335;}
+        [data-theme="dark"] {--bg:#121212;--card:#1e1e1e;--text:#e0e0e0;--get:#4285f4;--del:#d93025;}
+        body {font-family:Segoe UI,sans-serif;text-align:center;padding:20px;background:var(--bg);color:var(--text);margin:0;}
+        .card {background:var(--card);padding:30px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,0.15);max-width:480px;margin:0 auto;}
+        h1 {color:var(--get);margin:0 0 5px;}
+        .current {margin:20px 0;padding:20px;border-radius:16px;font-size:1.4rem;font-weight:bold;min-height:80px;}
+        .good {background:#4ade80;color:#166534;} .moderate {background:#facc15;color:#854d0e;} .unhealthy {background:#fb923c;color:#9a3412;} .bad {background:#f87171;color:#991b1b;}
+        button {padding:18px;border:none;border-radius:12px;font-size:18px;font-weight:bold;color:white;cursor:pointer;margin:8px 0;width:100%;}
+        #getBtn {background:var(--get);} #delBtn {background:var(--del);} #currentBtn {background:#10b981;}
+        #status {margin-top:20px;font-weight:bold;min-height:24px;}
+        #log {margin-top:15px;text-align:left;max-height:160px;overflow-y:auto;font-family:monospace;font-size:11px;background:#f8f9fa;padding:12px;border-radius:8px;display:none;white-space:pre-wrap;}
     </style>
 </head>
 <body>
-
 <div class="card">
-    <button id="themeToggle">🌙 Skift til mørkt tema</button>
     <h1>AirSentinel Pro</h1>
-    <p>Web Dashboard</p>
-    
-    <div class="btn-group">
-        <button id="getBtn" class="action-btn">📥 Hent & Gem Data (.csv)</button>
-        <button id="delBtn" class="action-btn">🗑️ Slet alt data i huset</button>
+    <p>Live Dashboard</p>
+
+    <div id="currentStatus" class="current">Tryk på "Vis nuværende" for at se luftkvalitet</div>
+
+    <div style="display:flex;gap:12px;flex-direction:column;">
+        <button id="currentBtn" class="action-btn">📊 Vis nuværende luftkvalitet (live)</button>
+        <button id="getBtn" class="action-btn">📥 Hent hele historik (.csv)</button>
+        <button id="delBtn" class="action-btn">🗑️ Slet alt data</button>
+    </div>
+
+    <div style="margin-top:25px;">
+        <label>Interval (minutter): </label>
+        <input id="intervalInput" type="number" value="5" min="1" max="120" style="width:80px;padding:8px;">
+        <button id="setIntervalBtn">Sæt interval</button>
     </div>
 
     <div id="status">Klar til at forbinde...</div>
@@ -119,100 +42,103 @@
 </div>
 
 <script>
-    const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
-    const DATA_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-    const CMD_CHAR_UUID = "cba1d466-344c-4be3-ab3f-189f80dd7518";
+const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
+const DATA_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+const CMD_CHAR_UUID = "cba1d466-344c-4be3-ab3f-189f80dd7518";
 
-    let gattServer = null;
-    let cmdChar = null;
-    let dataChar = null;
-    let csvContent = "PM1.0,PM2.5,PM10\n";
+let gattServer = null, cmdChar = null, dataChar = null;
+let csvContent = "PM1.0,PM2.5,PM10,Battery(mV)\n";
 
-    // MØRKT TEMA LOGIK
-    const themeToggle = document.getElementById('themeToggle');
-    const savedTheme = localStorage.getItem('theme') || 'light';
+async function connect() {
+    if (gattServer?.connected) return;
+    document.getElementById('status').innerText = "Forbinder...";
+    const device = await navigator.bluetooth.requestDevice({filters:[{name:'AirSentinel_Pro'}], optionalServices:[SERVICE_UUID]});
+    gattServer = await device.gatt.connect();
+    const service = await gattServer.getPrimaryService(SERVICE_UUID);
+    dataChar = await service.getCharacteristic(DATA_CHAR_UUID);
+    cmdChar = await service.getCharacteristic(CMD_CHAR_UUID);
+}
+
+function showCurrent(line) {
+    const [pm1,pm25,pm10,bat] = line.trim().split(',').map(Number);
+    const v = (bat/1000).toFixed(2);
+    let status = "", cls = "";
+    if(pm25 <= 15) { status = "God luft 💚"; cls = "good"; }
+    else if(pm25 <= 35) { status = "Moderat luft 💛"; cls = "moderate"; }
+    else if(pm25 <= 75) { status = "Dårlig luft 🟠"; cls = "unhealthy"; }
+    else { status = "Meget dårlig! 🔴"; cls = "bad"; }
     
-    if (savedTheme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        themeToggle.innerText = '☀️ Skift til lyst tema';
-    }
+    document.getElementById('currentStatus').innerHTML = `
+        <div>PM2.5 = <b>${pm25}</b> µg/m³</div>
+        <div style="font-size:0.9rem;margin-top:8px;">${status} • Batteri ${v} V</div>
+    `;
+    document.getElementById('currentStatus').className = `current ${cls}`;
+}
 
-    themeToggle.addEventListener('click', () => {
-        let theme = document.documentElement.getAttribute('data-theme');
-        if (theme === 'dark') {
-            document.documentElement.removeAttribute('data-theme');
-            localStorage.setItem('theme', 'light');
-            themeToggle.innerText = '🌙 Skift til mørkt tema';
-        } else {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            localStorage.setItem('theme', 'dark');
-            themeToggle.innerText = '☀️ Skift til lyst tema';
-        }
-    });
+// ==================== BUTTONS ====================
+document.getElementById('currentBtn').addEventListener('click', async () => {
+    try {
+        await connect();
+        document.getElementById('status').innerText = "Henter nuværende værdi...";
+        await dataChar.startNotifications();
+        const listener = (e) => {
+            const val = new TextDecoder().decode(e.target.value);
+            if (val.includes(',')) showCurrent(val);
+            dataChar.removeEventListener('characteristicvaluechanged', listener);
+            document.getElementById('status').innerText = "Nuværende værdi vist!";
+        };
+        dataChar.addEventListener('characteristicvaluechanged', listener);
+        await cmdChar.writeValue(new TextEncoder().encode("CURRENT"));
+    } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
+});
 
-    // BLUETOOTH LOGIK
-    async function connect() {
-        if (gattServer && gattServer.connected) return;
-        document.getElementById('status').innerText = "Forbinder til hus...";
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: 'AirSentinel_Pro' }],
-            optionalServices: [SERVICE_UUID]
-        });
-        gattServer = await device.gatt.connect();
-        const service = await gattServer.getPrimaryService(SERVICE_UUID);
-        dataChar = await service.getCharacteristic(DATA_CHAR_UUID);
-        cmdChar = await service.getCharacteristic(CMD_CHAR_UUID);
-    }
+document.getElementById('getBtn').addEventListener('click', async () => {
+    try {
+        await connect();
+        csvContent = "PM1.0,PM2.5,PM10,Battery(mV)\n";
+        const log = document.getElementById('log');
+        log.style.display = "block"; log.innerText = "";
+        document.getElementById('status').innerText = "Modtager historik...";
+        
+        await dataChar.startNotifications();
+        const listener = (e) => {
+            const val = new TextDecoder().decode(e.target.value);
+            if (val.includes("--- SLUT ---")) {
+                document.getElementById('status').innerText = "Data hentet!";
+                const blob = new Blob([csvContent], {type:'text/csv'});
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "AirSentinel_Data.csv"; a.click();
+                dataChar.removeEventListener('characteristicvaluechanged', listener);
+            } else {
+                csvContent += val;
+                log.innerText += val;
+                log.scrollTop = log.scrollHeight;
+            }
+        };
+        dataChar.addEventListener('characteristicvaluechanged', listener);
+        await cmdChar.writeValue(new TextEncoder().encode("GET"));
+    } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
+});
 
-    document.getElementById('getBtn').addEventListener('click', async () => {
-        try {
-            await connect();
-            csvContent = "PM1.0,PM2.5,PM10\n";
-            document.getElementById('log').style.display = "block";
-            document.getElementById('log').innerText = "";
-            document.getElementById('status').innerText = "Modtager data...";
+document.getElementById('delBtn').addEventListener('click', async () => {
+    if(!confirm("Slet ALT data permanent?")) return;
+    try {
+        await connect();
+        await cmdChar.writeValue(new TextEncoder().encode("DEL"));
+        document.getElementById('status').innerText = "Data slettet i huset 🗑️";
+        setTimeout(() => document.getElementById('status').innerText = "Klar", 3000);
+    } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
+});
 
-            await dataChar.startNotifications();
-            dataChar.addEventListener('characteristicvaluechanged', (event) => {
-                let value = new TextDecoder().decode(event.target.value);
-                if (value.includes("--- SLUT ---")) {
-                    document.getElementById('status').innerText = "Data hentet!";
-                    downloadCSV();
-                } else {
-                    csvContent += value;
-                    document.getElementById('log').innerText += value;
-                    document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
-                }
-            });
-
-            await cmdChar.writeValue(new TextEncoder().encode("GET"));
-        } catch (error) {
-            document.getElementById('status').innerText = "Fejl: " + error.message;
-        }
-    });
-
-    document.getElementById('delBtn').addEventListener('click', async () => {
-        if (!confirm("Vil du slette al historik permanent inde i huset?")) return;
-        try {
-            await connect();
-            document.getElementById('status').innerText = "Sender slet-kommando...";
-            await cmdChar.writeValue(new TextEncoder().encode("DEL"));
-            document.getElementById('status').innerText = "Log slettet i huset! 🗑️";
-            setTimeout(() => { document.getElementById('status').innerText = "Klar"; }, 3000);
-        } catch (error) {
-            document.getElementById('status').innerText = "Fejl ved sletning: " + error.message;
-        }
-    });
-
-    function downloadCSV() {
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "AirSentinel_Data.csv";
-        link.click();
-    }
+document.getElementById('setIntervalBtn').addEventListener('click', async () => {
+    const min = document.getElementById('intervalInput').value;
+    if(min < 1 || min > 120) return alert("1-120 minutter");
+    try {
+        await connect();
+        await cmdChar.writeValue(new TextEncoder().encode("INTERVAL:" + min));
+        document.getElementById('status').innerText = `Interval ændret til ${min} minutter`;
+        setTimeout(() => document.getElementById('status').innerText = "Klar", 2500);
+    } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
+});
 </script>
-
 </body>
 </html>
