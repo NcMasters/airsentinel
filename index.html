@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AirSentinel Dashboard</title>
     <style>
-        /* Farvevariabler til lyst og mørkt tema */
         :root {
             --bg-color: #f0f2f5;
             --card-bg: white;
@@ -43,7 +42,7 @@
             border-radius: 20px; 
             box-shadow: 0 10px 25px rgba(0,0,0,0.15); 
             display: inline-block; 
-            max-width: 400px; 
+            max-width: 450px; 
             width: 100%; 
             transition: background 0.3s; 
             position: relative;
@@ -60,26 +59,31 @@
             margin-bottom: 15px;
         }
 
-        h1 { margin-bottom: 5px; color: var(--btn-get); }
+        h1 { margin-bottom: 5px; color: var(--btn-get); font-size: 2.5rem; }
+        p { margin-bottom: 20px; }
         
         .btn-group { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
         
         button.action-btn { 
             border: none; 
-            padding: 15px; 
+            padding: 18px; 
             border-radius: 12px; 
-            font-size: 16px; 
+            font-size: 18px; 
             font-weight: bold; 
             cursor: pointer; 
             transition: transform 0.2s, background 0.3s; 
             color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
-        button.action-btn:active { transform: scale(0.98); }
+        button.action-btn:active { transform: scale(0.96); }
         #getBtn { background: var(--btn-get); }
         #delBtn { background: var(--btn-del); }
 
-        #status { margin-top: 20px; font-size: 14px; font-weight: bold; color: var(--status-color); }
+        #status { margin-top: 25px; font-size: 14px; font-weight: bold; color: var(--status-color); min-height: 20px; }
         
         #log { 
             margin-top: 20px; 
@@ -94,6 +98,7 @@
             border-radius: 8px; 
             display: none; 
             color: var(--text-color);
+            white-space: pre-wrap;
         }
     </style>
 </head>
@@ -123,7 +128,7 @@
     let dataChar = null;
     let csvContent = "PM1.0,PM2.5,PM10\n";
 
-    // --- LOGIK TIL DARK MODE ---
+    // MØRKT TEMA LOGIK
     const themeToggle = document.getElementById('themeToggle');
     const savedTheme = localStorage.getItem('theme') || 'light';
     
@@ -145,7 +150,7 @@
         }
     });
 
-    // --- BLUETOOTH LOGIK ---
+    // BLUETOOTH LOGIK
     async function connect() {
         if (gattServer && gattServer.connected) return;
         document.getElementById('status').innerText = "Forbinder til hus...";
@@ -187,13 +192,15 @@
     });
 
     document.getElementById('delBtn').addEventListener('click', async () => {
-        if (!confirm("Vil du slette al historik permanent?")) return;
+        if (!confirm("Vil du slette al historik permanent inde i huset?")) return;
         try {
             await connect();
+            document.getElementById('status').innerText = "Sender slet-kommando...";
             await cmdChar.writeValue(new TextEncoder().encode("DEL"));
-            document.getElementById('status').innerText = "Log slettet! 🗑️";
+            document.getElementById('status').innerText = "Log slettet i huset! 🗑️";
+            setTimeout(() => { document.getElementById('status').innerText = "Klar"; }, 3000);
         } catch (error) {
-            document.getElementById('status').innerText = "Fejl: " + error.message;
+            document.getElementById('status').innerText = "Fejl ved sletning: " + error.message;
         }
     });
 
@@ -206,83 +213,6 @@
         link.click();
     }
 </script>
-</body>
-</html>
-
-    async function connect() {
-        if (gattServer && gattServer.connected) return;
-        
-        document.getElementById('status').innerText = "Forbinder til hus...";
-        const device = await navigator.bluetooth.requestDevice({
-            filters: [{ name: 'AirSentinel_Pro' }],
-            optionalServices: [SERVICE_UUID]
-        });
-
-        gattServer = await device.gatt.connect();
-        const service = await gattServer.getPrimaryService(SERVICE_UUID);
-        dataChar = await service.getCharacteristic(DATA_CHAR_UUID);
-        cmdChar = await service.getCharacteristic(CMD_CHAR_UUID);
-    }
-
-    // HENT DATA LOGIK
-    document.getElementById('getBtn').addEventListener('click', async () => {
-        try {
-            await connect();
-            csvContent = "PM1.0,PM2.5,PM10\n";
-            document.getElementById('log').style.display = "block";
-            document.getElementById('log').innerText = "";
-            document.getElementById('status').innerText = "Modtager data...";
-
-            await dataChar.startNotifications();
-            dataChar.addEventListener('characteristicvaluechanged', (event) => {
-                let value = new TextDecoder().decode(event.target.value);
-                if (value.includes("--- SLUT ---")) {
-                    document.getElementById('status').innerText = "Data hentet!";
-                    downloadCSV();
-                } else {
-                    csvContent += value;
-                    document.getElementById('log').innerText += value;
-                    document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
-                }
-            });
-
-            let encoder = new TextEncoder();
-            await cmdChar.writeValue(encoder.encode("GET"));
-        } catch (error) {
-            document.getElementById('status').innerText = "Fejl: " + error.message;
-        }
-    });
-
-    // SLET DATA LOGIK
-    document.getElementById('delBtn').addEventListener('click', async () => {
-        if (!confirm("Er du sikker? Dette sletter AL historik permanent inde i huset!")) return;
-
-        try {
-            await connect();
-            document.getElementById('status').innerText = "Sender slet-kommando...";
-            
-            let encoder = new TextEncoder();
-            await cmdChar.writeValue(encoder.encode("DEL"));
-            
-            document.getElementById('status').innerText = "Log slettet i huset! 🗑️";
-            setTimeout(() => { document.getElementById('status').innerText = "Klar"; }, 3000);
-        } catch (error) {
-            document.getElementById('status').innerText = "Fejl ved sletning: " + error.message;
-        }
-    });
-
-    function downloadCSV() {
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", "AirSentinel_Data.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-</script>
 
 </body>
 </html>
-
