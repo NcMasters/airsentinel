@@ -29,7 +29,7 @@
         <button id="currentBtn" class="action-btn">📊 Vis nuværende luftkvalitet (live)</button>
         <button id="getBtn" class="action-btn">📥 Hent hele historik (.csv)</button>
         <button id="delBtn" class="action-btn">🗑️ Slet alt data</button>
-        <button id="beepBtn" class="action-btn">🔊 Send Test-Bip</button>
+        <button id="beepBtn" class="action-btn">🔊 Send Test-Bip / Alarm</button>
     </div>
 
     <div id="status">Klar til at forbinde...</div>
@@ -42,7 +42,8 @@ const DATA_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const CMD_CHAR_UUID = "cba1d466-344c-4be3-ab3f-189f80dd7518";
 
 let gattServer = null, cmdChar = null, dataChar = null;
-let csvContent = "PM1.0,PM2.5,PM10,Battery(mV)\n";
+// NYT: Headeren i filen har nu 5 kolonner adskilt af semikolon!
+let csvContent = "PM1.0;PM2.5;PM10;RestingBattery(mV);LoadedBattery(mV)\n";
 
 async function connect() {
     if (gattServer?.connected) return;
@@ -55,8 +56,17 @@ async function connect() {
 }
 
 function showCurrent(line) {
-    // Nu griber vi 5 værdier fra linjen i stedet for 4!
-    const [pm1,pm25,pm10,batRest,batLoad] = line.trim().split(',').map(Number);
+    // NYT: Deler nu koden op ved semikolon i stedet for komma
+    const parts = line.trim().split(';');
+    
+    // SIKKERHED: Hvis den fanger en gammel måling med kun 4 tal (eller færre), advarer den dig.
+    if (parts.length < 5) {
+        document.getElementById('currentStatus').innerHTML = `Gammelt dataformat fanget! Tryk "Slet alt data" og prøv igen.`;
+        document.getElementById('currentStatus').className = `current bad`;
+        return;
+    }
+
+    const [pm1,pm25,pm10,batRest,batLoad] = parts.map(Number);
     const vRest = (batRest/1000).toFixed(2);
     const vLoad = (batLoad/1000).toFixed(2);
     
@@ -81,7 +91,8 @@ document.getElementById('currentBtn').addEventListener('click', async () => {
         await dataChar.startNotifications();
         const listener = (e) => {
             const val = new TextDecoder().decode(e.target.value);
-            if (val.includes(',')) showCurrent(val);
+            // Tjekker nu for semikolon i stedet for komma
+            if (val.includes(';')) showCurrent(val);
             dataChar.removeEventListener('characteristicvaluechanged', listener);
             document.getElementById('status').innerText = "Nuværende værdi vist!";
         };
@@ -93,7 +104,7 @@ document.getElementById('currentBtn').addEventListener('click', async () => {
 document.getElementById('getBtn').addEventListener('click', async () => {
     try {
         await connect();
-        csvContent = "PM1.0,PM2.5,PM10,Battery(mV)\n";
+        csvContent = "PM1.0;PM2.5;PM10;RestingBattery(mV);LoadedBattery(mV)\n";
         const log = document.getElementById('log');
         log.style.display = "block"; log.innerText = "";
         document.getElementById('status').innerText = "Modtager historik...";
@@ -127,7 +138,6 @@ document.getElementById('delBtn').addEventListener('click', async () => {
     } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
 });
 
-// TEST BIP KNAP LOGIK
 document.getElementById('beepBtn').addEventListener('click', async () => {
     try {
         await connect();
