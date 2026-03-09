@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AirSentinel Pro</title>
     <style>
-        :root {--bg:#f0f2f5;--card:white;--text:#333;--get:#1a73e8;--del:#ea4335;}
+        :root {--bg:#f0f2f5;--card:white;--text:#333;--get:#1a73e8;--del:#ea4335;--beep:#8b5cf6;}
         [data-theme="dark"] {--bg:#121212;--card:#1e1e1e;--text:#e0e0e0;--get:#4285f4;--del:#d93025;}
         body {font-family:Segoe UI,sans-serif;text-align:center;padding:20px;background:var(--bg);color:var(--text);margin:0;}
         .card {background:var(--card);padding:30px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,0.15);max-width:480px;margin:0 auto;}
@@ -13,7 +13,7 @@
         .current {margin:20px 0;padding:20px;border-radius:16px;font-size:1.4rem;font-weight:bold;min-height:80px;}
         .good {background:#4ade80;color:#166534;} .moderate {background:#facc15;color:#854d0e;} .unhealthy {background:#fb923c;color:#9a3412;} .bad {background:#f87171;color:#991b1b;}
         button {padding:18px;border:none;border-radius:12px;font-size:18px;font-weight:bold;color:white;cursor:pointer;margin:8px 0;width:100%;}
-        #getBtn {background:var(--get);} #delBtn {background:var(--del);} #currentBtn {background:#10b981;}
+        #getBtn {background:var(--get);} #delBtn {background:var(--del);} #currentBtn {background:#10b981;} #beepBtn {background:var(--beep);}
         #status {margin-top:20px;font-weight:bold;min-height:24px;}
         #log {margin-top:15px;text-align:left;max-height:160px;overflow-y:auto;font-family:monospace;font-size:11px;background:#f8f9fa;padding:12px;border-radius:8px;display:none;white-space:pre-wrap;}
     </style>
@@ -29,12 +29,7 @@
         <button id="currentBtn" class="action-btn">📊 Vis nuværende luftkvalitet (live)</button>
         <button id="getBtn" class="action-btn">📥 Hent hele historik (.csv)</button>
         <button id="delBtn" class="action-btn">🗑️ Slet alt data</button>
-    </div>
-
-    <div style="margin-top:25px;">
-        <label>Interval (minutter): </label>
-        <input id="intervalInput" type="number" value="5" min="1" max="120" style="width:80px;padding:8px;">
-        <button id="setIntervalBtn">Sæt interval</button>
+        <button id="beepBtn" class="action-btn">🔊 Send Test-Bip</button>
     </div>
 
     <div id="status">Klar til at forbinde...</div>
@@ -129,14 +124,13 @@ document.getElementById('delBtn').addEventListener('click', async () => {
     } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
 });
 
-document.getElementById('setIntervalBtn').addEventListener('click', async () => {
-    const min = document.getElementById('intervalInput').value;
-    if(min < 1 || min > 120) return alert("1-120 minutter");
+// TEST BIP KNAP LOGIK
+document.getElementById('beepBtn').addEventListener('click', async () => {
     try {
         await connect();
-        await cmdChar.writeValue(new TextEncoder().encode("INTERVAL:" + min));
-        document.getElementById('status').innerText = `Interval ændret til ${min} minutter`;
-        setTimeout(() => document.getElementById('status').innerText = "Klar", 2500);
+        await cmdChar.writeValue(new TextEncoder().encode("BEEP"));
+        document.getElementById('status').innerText = "Bip sendt! 🔊";
+        setTimeout(() => document.getElementById('status').innerText = "Klar", 2000);
     } catch(err) { document.getElementById('status').innerText = "Fejl: " + err.message; }
 });
 </script>
