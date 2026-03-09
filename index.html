@@ -55,8 +55,11 @@ async function connect() {
 }
 
 function showCurrent(line) {
-    const [pm1,pm25,pm10,bat] = line.trim().split(',').map(Number);
-    const v = (bat/1000).toFixed(2);
+    // Nu griber vi 5 værdier fra linjen i stedet for 4!
+    const [pm1,pm25,pm10,batRest,batLoad] = line.trim().split(',').map(Number);
+    const vRest = (batRest/1000).toFixed(2);
+    const vLoad = (batLoad/1000).toFixed(2);
+    
     let status = "", cls = "";
     if(pm25 <= 15) { status = "God luft 💚"; cls = "good"; }
     else if(pm25 <= 35) { status = "Moderat luft 💛"; cls = "moderate"; }
@@ -65,7 +68,7 @@ function showCurrent(line) {
     
     document.getElementById('currentStatus').innerHTML = `
         <div>PM2.5 = <b>${pm25}</b> µg/m³</div>
-        <div style="font-size:0.9rem;margin-top:8px;">${status} • Batteri ${v} V</div>
+        <div style="font-size:0.9rem;margin-top:8px;">${status} • Hvile: ${vRest}V | Pres: ${vLoad}V</div>
     `;
     document.getElementById('currentStatus').className = `current ${cls}`;
 }
