@@ -40,10 +40,10 @@
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const DATA_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 const CMD_CHAR_UUID = "cba1d466-344c-4be3-ab3f-189f80dd7518";
+const TIME_CHAR_UUID = "d2a58b68-386b-4b1f-9c09-eb7410427845"; // NYT
 
-let gattServer = null, cmdChar = null, dataChar = null;
-// NYT: Headeren i filen har nu 5 kolonner adskilt af semikolon!
-let csvContent = "PM1.0;PM2.5;PM10;RestingBattery(mV);LoadedBattery(mV)\n";
+let gattServer = null, cmdChar = null, dataChar = null, timeChar = null;
+let csvContent = "Tidspunkt;PM1.0;PM2.5;PM10;RestingBattery(mV);LoadedBattery(mV)\n";
 
 async function connect() {
     if (gattServer?.connected) return;
@@ -53,32 +53,41 @@ async function connect() {
     const service = await gattServer.getPrimaryService(SERVICE_UUID);
     dataChar = await service.getCharacteristic(DATA_CHAR_UUID);
     cmdChar = await service.getCharacteristic(CMD_CHAR_UUID);
+    timeChar = await service.getCharacteristic(TIME_CHAR_UUID); // Hent tids-kanalen
+
+    // NYT: Send den nuværende UNIX-tid over til ESP32 med det samme vi forbinder
+    const unixTime = Math.floor(Date.now() / 1000).toString();
+    await timeChar.writeValue(new TextEncoder().encode(unixTime));
+    console.log("Ur synkroniseret til:", unixTime);
+}
+
+function formatUnixTime(unixStr) {
+    const unix = parseInt(unixStr);
+    if (unix < 1000000000) return "Ukendt_Tid"; // Første målinger før uret blev stillet
+    const d = new Date(unix * 1000);
+    return d.toLocaleString("da-DK"); // Viser "dd.mm.yyyy hh.mm.ss"
 }
 
 function showCurrent(line) {
-    // NYT: Deler nu koden op ved semikolon i stedet for komma
     const parts = line.trim().split(';');
+    if (parts.length < 6) return; // Forventer nu 6 elementer pga tiden!
     
-    // SIKKERHED: Hvis den fanger en gammel måling med kun 4 tal (eller færre), advarer den dig.
-    if (parts.length < 5) {
-        document.getElementById('currentStatus').innerHTML = `Gammelt dataformat fanget! Tryk "Slet alt data" og prøv igen.`;
-        document.getElementById('currentStatus').className = `current bad`;
-        return;
-    }
-
-    const [pm1,pm25,pm10,batRest,batLoad] = parts.map(Number);
-    const vRest = (batRest/1000).toFixed(2);
-    const vLoad = (batLoad/1000).toFixed(2);
+    // Element 0 er nu Unix Tiden, så vi justerer resten
+    const [unixTime, pm1, pm25, pm10, batRest, batLoad] = parts;
+    const vRest = (Number(batRest)/1000).toFixed(2);
+    const vLoad = (Number(batLoad)/1000).toFixed(2);
+    const pm25Num = Number(pm25);
     
     let status = "", cls = "";
-    if(pm25 <= 15) { status = "God luft 💚"; cls = "good"; }
-    else if(pm25 <= 35) { status = "Moderat luft 💛"; cls = "moderate"; }
-    else if(pm25 <= 75) { status = "Dårlig luft 🟠"; cls = "unhealthy"; }
+    if(pm25Num <= 15) { status = "God luft 💚"; cls = "good"; }
+    else if(pm25Num <= 35) { status = "Moderat luft 💛"; cls = "moderate"; }
+    else if(pm25Num <= 75) { status = "Dårlig luft 🟠"; cls = "unhealthy"; }
     else { status = "Meget dårlig! 🔴"; cls = "bad"; }
     
     document.getElementById('currentStatus').innerHTML = `
         <div>PM2.5 = <b>${pm25}</b> µg/m³</div>
         <div style="font-size:0.9rem;margin-top:8px;">${status} • Hvile: ${vRest}V | Pres: ${vLoad}V</div>
+        <div style="font-size:0.8rem;margin-top:4px;opacity:0.8;">Målt: ${formatUnixTime(unixTime)}</div>
     `;
     document.getElementById('currentStatus').className = `current ${cls}`;
 }
@@ -91,7 +100,6 @@ document.getElementById('currentBtn').addEventListener('click', async () => {
         await dataChar.startNotifications();
         const listener = (e) => {
             const val = new TextDecoder().decode(e.target.value);
-            // Tjekker nu for semikolon i stedet for komma
             if (val.includes(';')) showCurrent(val);
             dataChar.removeEventListener('characteristicvaluechanged', listener);
             document.getElementById('status').innerText = "Nuværende værdi vist!";
@@ -104,7 +112,7 @@ document.getElementById('currentBtn').addEventListener('click', async () => {
 document.getElementById('getBtn').addEventListener('click', async () => {
     try {
         await connect();
-        csvContent = "PM1.0;PM2.5;PM10;RestingBattery(mV);LoadedBattery(mV)\n";
+        csvContent = "Tidspunkt;PM1.0;PM2.5;PM10;RestingBattery(mV);LoadedBattery(mV)\n";
         const log = document.getElementById('log');
         log.style.display = "block"; log.innerText = "";
         document.getElementById('status').innerText = "Modtager historik...";
@@ -117,9 +125,15 @@ document.getElementById('getBtn').addEventListener('click', async () => {
                 const blob = new Blob([csvContent], {type:'text/csv'});
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "AirSentinel_Data.csv"; a.click();
                 dataChar.removeEventListener('characteristicvaluechanged', listener);
-            } else {
-                csvContent += val;
-                log.innerText += val;
+            } else if (val.includes(";")) {
+                // NYT: Fletter tiden ind pænt inden vi gemmer i filen
+                const parts = val.trim().split(';');
+                if (parts.length >= 6) {
+                    const formattedTime = formatUnixTime(parts[0]);
+                    const newLine = `${formattedTime};${parts[1]};${parts[2]};${parts[3]};${parts[4]};${parts[5]}\n`;
+                    csvContent += newLine;
+                    log.innerText += newLine;
+                }
                 log.scrollTop = log.scrollHeight;
             }
         };
